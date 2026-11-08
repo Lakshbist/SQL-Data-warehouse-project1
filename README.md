@@ -34,7 +34,7 @@ Develop SQL-based analytics to deliver detailed insights into:
  ---
 
  ## 🛡️License 
- This project is licensed under the [MIT License].(LICENSE). You are free to use, modify, and share this project with proper attribution.
+ This project is licensed under the [MIT License](LICENSE). You are free to use, modify, and share this project with proper attribution.
 
  ## 🌟About me 
  Hi there! I'm **Lakshmi Bist** . I'm an aspiring Data Engineer. I am building my first portfolio project, i am very excited as i begin this journey.
