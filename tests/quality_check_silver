@@ -1,0 +1,151 @@
+/* 
+     ===================================================================================================
+     Quality Checks 
+     ===================================================================================================
+
+     Script purpose :
+        This script performs various quality checks for data consistency, accuracy,and standardization
+        across the 'silver' schemas. It includes checks for:
+          - Null or duplicate primary keys.
+          - Unwanted spaces in string fields.
+          - Data standardization and consistency.
+          - Invaid date ranges and orders.
+          - Data consistency between related fields.
+
+     Usage Notes:
+          - Run these checks after data loading silver layer.
+          - Investigate and resolve any discrepancies found during the checks.
+     ================================================================================================
+*/
+
+-- ================================================================================================
+Checking silver.crm_cust_info
+-- ================================================================================================
+-- Checking for duplicates and nulls in primary key column.
+-- Expectations - No results 
+select cst_id,
+       count(*)
+       from silver.crm_cust_info
+       group by cst_id
+       having count(*) > 1;
+
+-- Check for unwanted spaces.
+-- Expectations - No results 
+  select cst_firstname,
+         cst_lastname
+  from silver.crm_cust_info
+  where cst_firstname != trim(cst_firstname) 
+   or cst_lastname != trim(cst_lastname) ;
+
+--Data Standardization and Consistency.
+  select distinct cst_marital_status from silver.crm_cust_info;
+  select distinct cst_gndr from silver.crm_cust_info;
+
+--======================================================================================================
+   Checking silver.crm_prd_info
+--======================================================================================================
+-- Check for unwanted spaces.
+-- Expecatitons - no results.
+  select prd_nm
+  from bronze.crm_prd_info
+  where prd_nm != trim(prd_nm);
+
+-- Check for duplicates.
+  select 
+  prd_id,
+  count(*) 
+  from silver.crm_prd_info
+  group by prd_id
+  having count(*)>1 or prd_id is null;
+
+-- Check for negative numbers and nulls in product tables.
+-- Expectations - no results.
+  select prd_cost 
+  from silver.crm_prd_info
+  where prd_cost < 0 or prd_cost is null
+
+-- Data Standardization and consistency.
+   select 
+        distinct prd_line 
+         from silver.crm_prd_info;
+
+-- Check for invalid dates.(Start date > end date )
+    select * from silver.crm_prd_info
+    where prd_start_dt > prd_end_dt;
+
+--========================================================================================================
+--Check for invalid dates.
+--Expectations - No invalid dates.
+  select nullif(sls_ship_dt ,0) as sls_ord_dt
+  from bronze.crm_sales_details
+  where sls_ship_dt  <= 0 
+  or len(sls_ship_dt ) != 8 
+  or sls_ship_dt > 20500101 
+  or sls_ship_dt  < 19000101
+
+-- Check for invalid date orders.(order date is > shipping date/ due dates)
+  select * 
+  from silver.crm_sales_details
+  where sls_ord_dt > sls_ship_dt or sls_ord_dt > sls_due_dt
+
+--Check data consistency sales = quantity * Price.
+-- Expectations - No results.
+select distinct 
+       sls_sales,
+       sls_quantity,
+       sls_price
+       from silver.crm_sales_details
+where sls_sales != sls_quantity * sls_price 
+or    sls_sales is null 
+or    sls_sales <=0 
+or    sls_quantity is null 
+or    sls_quantity <=0
+or    sls_price is null 
+or    sls_price <= 0
+order by sls_sales, sls_quantity, sls_price;
+
+--==========================================================================================================
+Check for silver.erp_cust_az12
+--==========================================================================================================
+-- Identify out-of-range dates 
+-- Expectations - bdates between 1924-01-01 to today.
+select distinct bdate 
+from silver.erp_CUST_AZ12
+where bdate > getdate() or bdate < '1924-01-01'
+
+-- Data standardization and consistency 
+select distinct gen 
+from silver.erp_CUST_AZ12
+
+--==========================================================================================================
+Check for silver.erp_loc_a101
+--==========================================================================================================
+-- Data standardization and consistency 
+select distinct
+cntry
+from silver.erp_LOC_A101
+order by cntry
+
+--==========================================================================================================
+Check for silver.erp_PX_CAT_G1V2
+--==========================================================================================================
+-- Check for unwanted spaces 
+-- Expectations - No results 
+select *
+from silver.erp_PX_CAT_G1V2
+where CAT = trim(CAT)
+or subcat != trim(subcat) 
+or Maintenance != trim(Maintenance);
+
+-- Data standardization and consistency 
+select distinct
+Maintenance
+from silver.erp_PX_CAT_G1V2;
+
+
+
+
+
+
+
+
